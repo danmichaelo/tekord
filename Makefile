@@ -1,35 +1,40 @@
-.PHONY: ttl solr clean
-.DEFAULT_GOAL := ttl
+.DEFAULT_GOAL := rdf
+.PHONY: rdf solr toolsupdate clean
 
-ttl: tekord.ttl
-solr: tekord_solr.json
+gitmaster := ./tools/.git/refs/heads/master
+basename = data/tekord
 
-tekord_solr.json: tekord.ttl
-	python ./tools/ttl2solr.py -v tekord.ttl tekord_solr.json
+# If make does create b in order to update something else, it deletes 
+# b later on after it is no longer needed. 
+.INTERMEDIATE: $(basename).rdf.xml
 
-tekord.ttl: tekord.tmp.ttl
-	rm -f skosify.log
-	python ./tools/skosify-sort.py -b 'http://data.ub.uio.no/' -o tekord.ttl vocabulary.ttl tekord.tmp.ttl
-
-tekord.tmp.ttl: tekord.rdf.xml
-	rapper -i rdfxml -o turtle tekord.rdf.xml >| tekord.tmp.ttl
-
-tekord.rdf.xml: tools tekord.xml
-	cd tools && \
-	git pull && \
-	cd .. && \
-    zorba -i tools/emneregister2rdf.xq -e "base:=ntub" -e "scheme:=http://data.ub.uio.no/tekord" \
-      -e "file:=../tekord.xml" -e "signature_handler:=udc" >| tekord.rdf.xml
+rdf: toolsupdate $(basename).ttl
+solr: toolsupdate solr/tekord.json
 
 tools:
 	git clone https://github.com/danmichaelo/ubdata-tools.git tools
 
-#tekord.xml:
+toolsupdate: tools
+	cd ./tools && git pull && cd ..
+	# touch ./tools/.git/refs/heads/master
+
+$(basename).ttl: $(basename).rdf.xml $(gitmaster)
+	rm -f skosify.log
+	python ./tools/skosify-sort.py -b 'http://data.ub.uio.no/' -o $@ vocabulary.ttl $(basename).rdf.xml
+
+$(basename).rdf.xml: $(basename).xml $(gitmaster)
+	zorba -i ./tools/emneregister2rdf.xq -e "base:=ntub" -e "scheme:=http://data.ub.uio.no/tekord" \
+	  -e "file:=../$(basename).xml" -e "signature_handler:=udc" >| $@
+
+#$(basename).xml:
 #	<eksporteres ikke automatisk fra bibsys enda>
-#    wget -nv -O tekord.xml http://www.bibsys.no/files/out/humordsok/ntubregister.xml
+#	curl -s -o ./$(basename).xml http://www.bibsys.no/files/out/tekordsok/NTUBregister.xml
+
+solr/tekord.json: $(basename).ttl $(gitmaster)
+	python ./tools/ttl2solr.py -v $(basename).ttl $@
 
 clean:
 	rm -f skosify.log
-	rm -f tekord.rdf.xml
-	rm -f tekord.ttl
-	rm -f tekord.tmp.ttl
+	rm -f $(basename).rdf.xml
+	rm -f $(basename).ttl
+	rm -f $(basename).tmp.ttl
