@@ -25,7 +25,7 @@ def task_fetch_core():
     logger.info('Checking for updated files')
 
     yield {
-        'doc': 'Fetch remote files that have changed',
+        'doc': 'Fetch remote core files that have changed',
         'basename': 'fetch',
         'name': None
     }
@@ -87,7 +87,10 @@ def task_build():
 
     return {
         'doc': 'Build distribution files (RDF/SKOS + MARC21XML) from source files',
-        'actions': [build_dist],
+        'actions': [
+            'mkdir -p dist',
+            build_dist,
+        ],
         'file_dep': [
             'src/tekord.xml',
             'src/real_tekord_mappings.ttl',
@@ -113,6 +116,14 @@ def task_publish_dumps():
         '%s.ttl' % config['basename'],
         '%s.complete.ttl' % config['basename']
     ])
+
+
+def task_build_mappings():
+    return data_ub_tasks.build_mappings_gen(
+        ['src/real_tekord_mappings.ttl'],
+        'dist/tekord_realfagstermer.mappings.nt',
+        'http://data.ub.uio.no/tekord'
+    )
 
 
 def task_fuseki():
