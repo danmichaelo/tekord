@@ -127,5 +127,7 @@ def task_build_mappings():
 
 
 def task_fuseki():
-    return data_ub_tasks.fuseki_task_gen(config, ['dist/%(basename)s.complete.ttl'])
+    return data_ub_tasks.fuseki_task_gen(config, [
+	'dist/%(basename)s.complete.ttl',
+    ])
 

@@ -6,3 +6,4 @@ solr/tekord.json
 *.bz2
 *.etag
 dumps/
+*.pyc
