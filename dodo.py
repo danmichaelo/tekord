@@ -87,7 +87,10 @@ def task_build():
 
     return {
         'doc': 'Build distribution files (RDF/SKOS + MARC21XML) from source files',
-        'actions': [build_dist],
+        'actions': [
+            'mkdir -p dist',
+            build_dist,
+        ],
         'file_dep': [
             'src/tekord.xml',
             'src/real_tekord_mappings.ttl',
