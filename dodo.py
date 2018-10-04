@@ -25,26 +25,18 @@ def task_fetch():
     logger.info('Checking for updated files')
 
     yield {
-        'doc': 'Fetch remote files that have changed',
+        'doc': 'Fetch remote core files that have changed',
         'basename': 'fetch',
         'name': None
     }
     yield data_ub_tasks.git_pull_task_gen(config)
     for file in [
         {
-            'remote': 'https://mapper.biblionaut.net/export.rdf',
-             'local': 'src/mappings.rdf'
+            'remote': 'https://mapper.biblionaut.net/export/real_tekord_mappings.ttl',
+            'local': 'src/real_tekord_mappings.ttl',
         }
     ]:
-        yield {
-            'name': file['local'],
-            'actions': [(data_ub_tasks.fetch_remote, [], {
-                'remote': file['remote'],
-                'etag_cache': '{}.etag'.format(file['local'])
-            })],
-            'task_dep': ['fetch_core:git-pull'],
-            'targets': [file['local']]
-        }
+        yield data_ub_tasks.fetch_remote_gen(file['remote'], file['local'], ['fetch:git-pull'])
 
 
 def task_build():
@@ -64,7 +56,7 @@ def task_build():
         ]
 
         mappings = [
-            'src/mappings.rdf'
+            'src/real_tekord_mappings.ttl'
         ]
 
         # 1) MARC21
@@ -98,7 +90,7 @@ def task_build():
         'actions': [build_dist],
         'file_dep': [
             'src/tekord.xml',
-            'src/mappings.rdf',
+            'src/real_tekord_mappings.ttl',
             'ubo-onto.ttl',
             '%s.scheme.ttl' % config['basename']
         ],
@@ -121,6 +113,14 @@ def task_publish_dumps():
         '%s.ttl' % config['basename'],
         '%s.complete.ttl' % config['basename']
     ])
+
+
+def task_build_mappings():
+    return data_ub_tasks.build_mappings_gen(
+        ['src/real_tekord_mappings.ttl'],
+        'dist/tekord_realfagstermer.mappings.nt',
+        'http://data.ub.uio.no/tekord'
+    )
 
 
 def task_fuseki():
